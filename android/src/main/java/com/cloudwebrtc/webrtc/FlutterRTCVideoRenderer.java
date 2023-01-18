@@ -130,7 +130,15 @@ public class FlutterRTCVideoRenderer implements EventChannel.StreamHandler {
      * resources (if rendering is in progress).
      */
     private void removeRendererFromVideoTrack() {
-        videoTrack.removeSink(surfaceTextureRenderer);
+        // XXX If WebRTCModule#mediaStreamTrackRelease has already been
+        // invoked on videoTrack, then it is no longer safe to call removeSink
+        // on the instance, it will throw IllegalStateException.
+        try {
+            videoTrack.removeSink(surfaceTextureRenderer);
+        } catch (Throwable tr) {
+        // Releasing streams happens in the WebRTC thread, thus we might (briefly) hold
+        // a reference to a released stream. Just ignore the error and move on.
+        }
     }
 
     /**
